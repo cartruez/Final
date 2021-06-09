@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <title>Environmental Contamination </title>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css"><link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css"><link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-control-geocoder.Geocoder.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <script src="https://unpkg.com/leaflet@1.5.0/dist/leaflet.js"></script>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.0/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet-responsive-popup@0.6.4/leaflet.responsive.popup.js"></script>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet-responsive-popup@0.6.4/leaflet.responsive.popup.css" />
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+    </head>
+    <body>
+
+          <div class="leflet-control">
+               <div class=" info_box" style="
+            position: absolute;
+            margin:180px 10px 10px 10px;
+            max-width:300px;
+            z-index: 999;
+            padding: 16px 16px;
+            font: 14px/16px Garamond Bold, Helvetica, sans-serif;
+            background: white; 
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: scroll;
+
+            ">
+            <h3>Methods</h3>
+            <p>
+        -This map focuses on the environmental concerns of chemical weapon use. In 2020 the Portland Porland Department used OC, CS, CN tear gas deployments, rubber bullets, and flash bangs against protestors of George Floyds murder.
+        <h3>Forthcoming:</h3>
+         - Approximate locations where chemical weapons were used
+         - Environmental testing results
+        </p>
+        <h3>Note:</h3>
+        -Additional information can be found through <a href="https://www.chemicalweaponsresearch.com/">Dapper Stats</a> and 
+        <a href="http://web.pdx.edu/~cb22/Teargas/Teargasmap.html">Here</a>
+        <br>
+          </div>
+        </div>
+
+     <div id="map">
+        <div style="display: flex; justify-content: center;width: 100%">
+            <h1 style="position: absolute;
+                margin:0px;
+                /*left: 40%;*/
+                z-index: 998;
+                text-align: center;
+                font-weight: 900;
+                padding: 16px 16px;
+                font: 24px/16px Garamond Bold, Helvetica, sans-serif;
+                background: black;
+                color: white;
+                max-width: 00px
+                background: rgba(0,0,0,0.8);
+                box-shadow: 0 0 15px rgba(0,0,0,0.2);
+                border-radius: 5px;" > Contamination Concerns from  <br><br>  Chemical Weapons deployed by Portland Police
+            </h1>
+            <h2 style="position: absolute;
+                margin:0px;
+                /*left: 40%;*/
+                z-index: 998;
+                text-align: center;
+                padding: 16px 16px;
+                font-weight: 700;
+                font: 18px/16px Garamond Bold, Helvetica, sans-serif;
+                background: red;
+                top: 90px;
+                color: white;
+                max-width: 00px
+                background: rgba(0,0,0,0.8);
+                box-shadow: 0 0 15px rgba(0,0,0,0.2);
+                border-radius: 5px;" > Focused near ICE and The Cottonwood School   <br>
+            </h2>
+        </div>
+        </div>
+
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script><script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-control-geocoder.Geocoder.js"></script>
+        <script src="data/Zoning_Designations_Detailed_1.js"></script>
+        <script src="data/Vegetation_2.js"></script>
+        <script src="data/Storm_Pipes_3.js"></script>
+        <script src="data/culvclip_4.js"></script>
+        <script src="data/clip_culv_5.js"></script>
+        <script src="data/ICE_6.js"></script>
+        <script src="data/COTTONWOOD_7.js"></script>
+
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:true 
+        }).fitBounds([[45.493470,-122.669770]]); 
+
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        L.control.locate({locateOptions: {minZoom: 13}}).addTo(map);
+
+    
+        var bounds_group = new L.featureGroup([]); 
+        function setBounds() { map.setMaxBounds(map.getBounds()); } 
+        // var bounds_group = new L.featureGroup([]);
+        // function setBounds() {
+        //         map.setMaxBounds(map.getBounds());
+        //     }
+
+
+        // var bounds_max = new L.featureGroup([]);
+        // function setBounds() {
+        //     if (bounds_max.getLayers().length) {
+        //         map.setMaxBounds(map.getBounds());
+        //     }
+        // }
+
+        map.createPane('pane_OSMStandard_0');
+        map.getPane('pane_OSMStandard_0').style.zIndex = 400;
+        var layer_OSMStandard_0 = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+            minZoom: 16,
+            id: 'mapbox/light-v10',
+            tileSize: 512,
+            zoomOffset: -1,
+            accessToken: 'pk.eyJ1IjoiY2IyMiIsImEiOiJjanV1M254cnowZW5sM3pvM3NrNG5jejRiIn0.CLcM4fbnQ9-sVh-UTuMvLw  '
+        }).addTo(map);
+        layer_OSMStandard_0;
+        map.addLayer(layer_OSMStandard_0);
+
+
+        function pop_Zoning_Designations_Detailed_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        closeOnClick: false;
+                    } else {
+                        layer.eachLayer(function(feature){
+                            closeOnClick: false
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>Zone Designation: </strong><br />' + (feature.properties['ZONE_DESC'] !== null ? autolinker.link(feature.properties['ZONE_DESC'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>October 2020 News Article: </strong><br />' + (feature.properties['URL1'] !== null ? autolinker.link(feature.properties['URL1'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400, autoPan: false});
+        }
+
+        function style_Zoning_Designations_Detailed_1_0(feature) {
+            console.log(feature.properties['ZONE_DESC']);
+            switch(String(feature.properties['ZONE_DESC'])) {
+                case 'Central Commercial': 
+                case 'Commercial Employment': 
+                case 'Commercial Mixed Use 1': 
+                case 'Commercial Mixed Use 2': 
+                case 'Commercial Mixed Use 3':
+                    return {
+                pane: 'pane_Zoning_Designations_Detailed_1',
+                opacity: 0,
+                color: 'rgba(253,141,97,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 0,
+                fillColor: 'rgba(253,141,97,1.0)',
+                interactive: true,
+                autoPan: false,
+            }
+                    break;
+                case 'Central Employment': 
+                case 'General Employment 1':
+                case 'General Employment 2':
+                    return {
+                pane: 'pane_Zoning_Designations_Detailed_1',
+                opacity: 0,
+                color: 'rgba(255,127,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 0,
+                fillColor: 'rgba(255,127,0,1.0)',
+                interactive: true,
+                autoPan: false,
+            }
+                    break;
+                case 'Central Residential': 
+                case 'Commercial Residential': 
+                case'Institutional Residential':
+                case'Residential 10,000': 
+                case'Residential 2,500': 
+                case'Residential 20,000': 
+                case'Residential 5,000':
+                case'Residential 7,000': 
+                case'Residential Farm / Forest':
+                case'Residential Multi-Dwelling 1':
+                case'Residential Multi-Dwelling 2':
+                case'Residential Multi-Dwelling 3':
+                case'Residential Multi-Dwelling 4':
+                    return {
+                pane: 'pane_Zoning_Designations_Detailed_1',
+                opacity: 0.8,
+                color: 'rgba(253,191,111,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 0.8,
+                fillColor: 'rgba(253,191,111,1.0)',
+                interactive: true,
+                autoPan: false,
+            }
+                    break;
+            case 'General Industrial 1':
+            case 'Heavy Industrial':
+                return {
+                pane: 'pane_Zoning_Designations_Detailed_1',
+                opacity: 0,
+                color: 'rgba(171,221,164,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 0,
+                fillColor: 'rgba(171,221,164,1.0)',
+                interactive: true,
+                autoPan: false,
+            }
+                    break;
+            case 'Multi-Dwelling - Corridor':
+                return {
+                pane: 'pane_Zoning_Designations_Detailed_1',
+                opacity: 0,
+                color: 'rgba(150,75,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 0,
+                fillColor: 'rgba(150,75,0,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Open Space':
+                    return {
+                pane: 'pane_Zoning_Designations_Detailed_1',
+                opacity: 0,
+                color: 'rgba(43,131,186,1.0)',
+                dashArray: '',
+                
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1, 
+                fill: true,
+                fillOpacity: 0,
+                fillColor: 'rgba(43,131,186,1.0)',
+                interactive: true,
+                autoPan: false,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_Zoning_Designations_Detailed_1');
+        map.getPane('pane_Zoning_Designations_Detailed_1').style.zIndex = 401;
+        map.getPane('pane_Zoning_Designations_Detailed_1').style['mix-blend-mode'] = 'normal';
+        var layer_Zoning_Designations_Detailed_1 = new L.geoJson(json_Zoning_Designations_Detailed_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Zoning_Designations_Detailed_1',
+            layerName: 'layer_Zoning_Designations_Detailed_1',
+            pane: 'pane_Zoning_Designations_Detailed_1',
+            onEachFeature: pop_Zoning_Designations_Detailed_1,
+            style: style_Zoning_Designations_Detailed_1_0,
+        });
+
+        bounds_group.addLayer(layer_Zoning_Designations_Detailed_1);
+          // This adds Zoning layer 
+        // map.addLayer(layer_Zoning_Designations_Detailed_1);
+
+        function pop_Vegetation_2(feature, layer) {
+            layer.on({
+                 mouseout: function(e) {
+                        if (typeof layer.closePopup == 'function') {
+                            closeOnClick: false;
+                        } else {
+                            layer.eachLayer(function(feature){
+                                closeOnClick: false
+                            });
+                        }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Vegetation Class: </th>\
+                        <td>' + (feature.properties['NVCS_CLASS'] !== null ? autolinker.link(feature.properties['NVCS_CLASS'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>2020 News Article: </strong><br />' + (feature.properties['URL1'] !== null ? autolinker.link(feature.properties['URL1'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400, autoPan: false});
+        }
+
+        function style_Vegetation_2_0(feature) {
+            switch(String(feature.properties['NVCS_CLASS'])) {
+                case 'Forest':
+                    return {
+                pane: 'pane_Vegetation_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 0.6,
+                fillColor: 'rgba(0,104,55,1.0)',
+                interactive: true,
+                autoPan: false,
+            }
+                    break;
+                case 'Herbaceous':
+                    return {
+                pane: 'pane_Vegetation_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 0.6,
+                fillColor: 'rgba(49,163,84,1.0)',
+                interactive: true,
+                autoPan: false,
+            }
+                    break;
+                case 'Shrubland':
+                    return {
+                pane: 'pane_Vegetation_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 0.6,
+                fillColor: 'rgba(120,198,121,1.0)',
+                interactive: true,
+                autoPan: false,
+            }
+                    break;
+                case 'Woodland':
+                    return {
+                pane: 'pane_Vegetation_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 0.6,
+                fillColor: 'rgba(194,230,153,1.0)',
+                interactive: true,
+                autoPan: false,
+            }
+                    break;
+                default:
+                    return {
+                pane: 'pane_Vegetation_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 0,
+                fillColor: 'rgba(255,255,204,1.0)',
+                interactive: true,
+                autoPan: false,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_Vegetation_2');
+        map.getPane('pane_Vegetation_2').style.zIndex = 402;
+        map.getPane('pane_Vegetation_2').style['mix-blend-mode'] = 'normal';
+        var layer_Vegetation_2 = new L.geoJson(json_Vegetation_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Vegetation_2',
+            layerName: 'layer_Vegetation_2',
+            pane: 'pane_Vegetation_2',
+            onEachFeature: pop_Vegetation_2,
+            style: style_Vegetation_2_0,
+        });
+
+        bounds_group.addLayer(layer_Vegetation_2);
+        map.addLayer(layer_Vegetation_2);
+
+        function pop_Storm_Pipes_3(feature, layer) {
+            layer.on({
+                  mouseout: function(e) {
+                        if (typeof layer.closePopup == 'function') {
+                            closeOnClick: false;
+                        } else {
+                            layer.eachLayer(function(feature){
+                                closeOnClick: false
+                            });
+                        }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DETAIL_SYM'] !== null ? autolinker.link(feature.properties['DETAIL_SYM'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+        }
+
+        function style_Storm_Pipes_3_0() {
+            return {
+                pane: 'pane_Storm_Pipes_3',
+                opacity: 1,
+                color: 'rgba(232,113,141,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 1.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Storm_Pipes_3');
+        map.getPane('pane_Storm_Pipes_3').style.zIndex = 403;
+        map.getPane('pane_Storm_Pipes_3').style['mix-blend-mode'] = 'normal';
+        var layer_Storm_Pipes_3 = new L.geoJson(json_Storm_Pipes_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Storm_Pipes_3',
+            layerName: 'layer_Storm_Pipes_3',
+            pane: 'pane_Storm_Pipes_3',
+            onEachFeature: pop_Storm_Pipes_3,
+            style: style_Storm_Pipes_3_0,
+        });
+        bounds_group.addLayer(layer_Storm_Pipes_3);
+        map.addLayer(layer_Storm_Pipes_3);
+
+        function pop_clip_culv_5(feature, layer) {
+            layer.on({
+                 mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        closeOnClick: false;
+                    } else {
+                        layer.eachLayer(function(feature){
+                            closeOnClick: false
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+        var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>Culvert</strong><br />' +  '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>August 2020 News Article:</strong><br />' + "<b><a href= 'https://www.portlandoregon.gov/bes/article/764680'>CS Gas Residue</a>" + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong></strong><br/>' + '<img src="https://www.hakaimagazine.com/wp-content/uploads/juniper-simonis-tear-gas-fish.jpg" width="100%"/>'+ '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+        }
+
+        function style_clip_culv_5_0() {
+            return {
+                pane: 'pane_clip_culv_5',
+                opacity: 1,
+                color: 'rgba(77, 19, 209, 1)',
+                dashArray: '',
+                lineCap: 'round',
+                lineJoin: 'round',
+                weight: 7.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_clip_culv_5');
+        map.getPane('pane_clip_culv_5').style.zIndex = 405;
+        map.getPane('pane_clip_culv_5').style['mix-blend-mode'] = 'normal';
+        var layer_clip_culv_5 = new L.geoJson(json_clip_culv_5, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_clip_culv_5',
+            layerName: 'layer_clip_culv_5',
+            pane: 'pane_clip_culv_5',
+            onEachFeature: pop_clip_culv_5,
+            style: style_clip_culv_5_0,
+        });
+        bounds_group.addLayer(layer_clip_culv_5);
+        map.addLayer(layer_clip_culv_5);
+
+        function pop_ICE_6(feature, layer) {
+            layer.on({
+               mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        closeOnClick: false;
+                    } else {
+                        layer.eachLayer(function(feature){
+                            closeOnClick: false
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>U.S. Immigration and Customs Enforcement</strong><br />' +  '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>April 2021 News Article:</strong><br />' + (feature.properties['URL'] !== null ? autolinker.link(feature.properties['URL'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>The Landlord:</strong><br/>' + "<b><a href= 'https://www.wweek.com/news/courts/2018/06/21/landlord-of-portland-ice-offices-admits-he-was-at-the-wheel-of-a-mercedes-that-struck-a-protester/'>Stuart Lindquist</a>" + '</td>\
+                    </tr>\
+                </table>';
+
+            layer.bindPopup(popupContent, {maxHeight: 500, width: 500, closeOnClick: false });
+
+        }
+
+        function style_ICE_6_0() {
+            return {
+                pane: 'pane_ICE_6',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: .5,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(226,0,0,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_ICE_6');
+        map.getPane('pane_ICE_6').style.zIndex = 406;
+        map.getPane('pane_ICE_6').style['mix-blend-mode'] = 'normal';
+        var layer_ICE_6 = new L.geoJson(json_ICE_6, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_ICE_6',
+            layerName: 'layer_ICE_6',
+            pane: 'pane_ICE_6',
+            onEachFeature: pop_ICE_6,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_ICE_6_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_ICE_6);
+        map.addLayer(layer_ICE_6);
+        function pop_COTTONWOOD_7(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        closeOnClick: false;
+                    } else {
+                        layer.eachLayer(function(feature){
+                            closeOnClick: false
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<b>The Cottonwood School of Civics and Science </br>'+ '<b>April 2021 News Article: </br>' + (feature.properties['URL'] !== null ? autolinker.link(feature.properties['URL'].toLocaleString()) : '') + '<img src="https://www.koin.com/wp-content/uploads/sites/10/2021/04/Flags-mark-where-pepperballs-landed-in-Cottonwood-School-Playgroud-0412021.jpg" width="100%"/>'
+
+            layer.bindPopup(popupContent, {maxHeight: 500, width: 500, closeOnClick: false });
+        }
+
+        function style_COTTONWOOD_7_0() {
+            return {
+                pane: 'pane_COTTONWOOD_7',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,127,80,0.80)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_COTTONWOOD_7');
+        map.getPane('pane_COTTONWOOD_7').style.zIndex = 407;
+        map.getPane('pane_COTTONWOOD_7').style['mix-blend-mode'] = 'normal';
+        var layer_COTTONWOOD_7 = new L.geoJson(json_COTTONWOOD_7, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_COTTONWOOD_7',
+            layerName: 'layer_COTTONWOOD_7',
+            pane: 'pane_COTTONWOOD_7',
+            onEachFeature: pop_COTTONWOOD_7,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_COTTONWOOD_7_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_COTTONWOOD_7);
+        map.addLayer(layer_COTTONWOOD_7);
+        var osmGeocoder = new L.Control.Geocoder({
+            collapsed: true,
+            position: 'topleft',
+            text: 'Search',
+            title: 'Testing'
+        }).addTo(map);
+
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .className += ' fa fa-search';
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .title += 'Search for a place';
+        var baseMaps = {};
+        L.control.layers(baseMaps,{' Cottonwood School': layer_COTTONWOOD_7,' ICE': layer_ICE_6,'Culverts': layer_clip_culv_5,'Storm Pipes': layer_Storm_Pipes_3,'Vegetation<br /><table><tr></tr></table>': layer_Vegetation_2,'Zoning Designations<br /><table><tr></tr></table>': layer_Zoning_Designations_Detailed_1,"OSM Standard": layer_OSMStandard_0,}).addTo(map);
+        setBounds();
+        map.setZoom(1);
+        </script>
+    </body>
+</html>
